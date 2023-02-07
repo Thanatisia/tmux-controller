@@ -42,17 +42,27 @@ tmuxctrl {options} [positionals {suboptions}] <arguments>
 ### Usage
 - Sessions
     1. Create a new session
-        $0 session -c
+        ```console
+        tmuxctrl session -c
+        ```
     2. Attach to an existing session
-        $0 session -a
+        ```console
+        tmuxctrl session -a
+        ```
     3. Detach from the current session
-        $0 session -d
+        ```console
+        tmuxctrl session -d
+        ```
     4. List all existing sessions
-        $0 session -p
+        ```console
+        tmuxctrl session -p
+        ```
 
 - General
     + Display this verbose help message
-        $0 -h
+        ```console
+        tmuxctrl -h
+        ```
 
 ## References
 
