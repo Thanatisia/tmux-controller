@@ -1,0 +1,239 @@
+#!/bin/env bash
+: "
+Tmux controller
+"
+
+<<EOF
+General Utilities
+EOF
+
+display_help()
+{
+    : "
+    Display verbose messages
+    "
+    msg="$(cat <<EOF
+Tmux Controller
+
+- Synopsis/Syntax:
+    $0 {options} [positionals] <arguments>
+- Parameters
+    - Positionals
+        - session {options} <arguments> : Manage tmux sessions
+            - Options
+                + -a | --attach : Attach to an existing session
+                + -c | --create : Create a new session
+                + -d | --detach : Detach from current session
+                + -p | --print : Print all session names
+                + -h | --help : Display this verbose help message
+    - Optionals
+        - With Arguments
+        - Flags
+            + -h | --help : Display this verbose help message
+- Usage
+    - Sessions
+        1. Create a new session
+            $0 session -c
+        2. Attach to an existing session
+            $0 session -a
+        3. Detach from the current session
+            $0 session -d
+        4. List all existing sessions
+            $0 session -p
+
+    - General
+        + Display this verbose help message
+            $0 -h
+EOF
+)"
+    echo -e "$msg"
+}
+
+get_tmux_sessions()
+{
+    : "
+    Get all sessions and return them
+    "
+    # Initialize Variables
+    declare -n tmux_sessions=$1
+
+    # Get all tmux sessions
+    tmux_all_sessions="$(tmux ls)"
+
+    # Split multiline string into named reference array
+    IFS=$'\n' read -d '\n' -a tmux_sessions <<< "$tmux_all_sessions"
+}
+
+get_tmux_session_Name()
+{
+    : "
+    Cut up tmux session definition array into the session name
+    "
+    # Initialize Variables
+    declare -n ret_Arr=$1
+
+    # Get tmux session definition array
+    get_tmux_sessions all_tmux_sessions
+
+    # Print all sessions
+    for curr_tmux_session_number in "${!all_tmux_sessions[@]}"; do
+        curr_tmux_session="${all_tmux_sessions[$curr_tmux_session_number]}"
+        curr_tmux_session_name="$(echo -e $curr_tmux_session | cut -d ':' -f1)"
+
+        ret_Arr+=("$curr_tmux_session_name")
+    done
+}
+
+<<EOF
+Functional Utilities
+EOF
+
+attach_session()
+{
+    : "
+    Request for a session name and  
+    attach to the session
+    "
+    local SESSION_NAME="$1"
+
+    if [[ "${SESSION_NAME}" == "" ]]; then
+        # Print all sessions
+        echo -e "All Sessions:"
+        print_all_sessions
+
+        # Get user input
+        read -p "Session to Attach (Please enter the Session Name) > " target_session
+    else
+        target_session="$SESSION_NAME"
+    fi
+
+    # Attach session
+    tmux attach-session -t "$target_session"
+}
+
+create_session()
+{
+    : "
+    Request for a session name and  
+    create new session
+    "
+
+    # Get user input
+    read -p "New Session Name > " target_session
+
+    # Attach session
+    tmux new -s "$target_session"
+}
+
+print_all_sessions()
+{
+    : "
+    Print all sessions
+    "
+    # Get all session names
+    get_tmux_session_Name all_session_Names
+
+    # Print all session names
+    for session_id in "${!all_session_Names[@]}"; do
+        session_Name="${all_session_Names[$session_id]}"
+        echo -e "[$session_id] : $session_Name"
+    done
+}
+
+detach_session()
+{
+    : "
+    Detach from current session
+    "
+    tmux detach
+}
+
+<<EOF
+System Utilities
+EOF
+
+main()
+{
+    argv=("$@")
+    argc="${#argv[@]}"
+
+    ### Command Line Arguments
+    if [[ "${argc}" -gt 0 ]]; then
+        # If there are Arguments
+        while [[ "$1" != "" ]]; do
+            # Loop through all current arguments
+            case "$1" in
+                "session")
+                    # Manage tmux sessions
+                    if [[ "$2" != "" ]]; then
+                        session_opts="$2"
+                        case "$session_opts" in
+                            "-a" | "--attach")
+                                # Attach session
+                                attach_session
+                                shift 1
+                                ;;
+                            "-c" | "--create")
+                                # Create session
+                                create_session
+                                shift 1
+                                ;;
+                            "-d" | "--detach")
+                                detach_session
+                                shift 1
+                                ;;
+                            "-p" | "--print")
+                                # List all sessions
+                                print_all_sessions
+                                shift 1
+                                ;;
+                            "--reattach")
+                                # Detach from current session and reattach to another session
+                                # Print all sessions
+                                echo -e "All Sessions:"
+                                print_all_sessions
+
+                                # Get user input
+                                read -p "Session to Attach (Please enter the Session Name) > " target_session
+
+                                # Detach from current session and Re-attach to new session
+                                tmux detach && tmux attach-session -t $target_session
+                                shift 1
+                                ;;
+                            "-h" | "--help")
+                                # Display help menu and verbose messages
+                                display_help
+                                shift 1
+                                ;;
+                            *)
+                                # Invalid session option
+                                echo -e "[X] Invalid session option"
+                                shift 1
+                                ;;
+                        esac
+                    else
+                        echo -e "No session option provided."
+                    fi
+                    shift 1
+                    ;;
+                "-h" | "--help")
+                    # Display help menu and verbose messages
+                    display_help
+                    shift 1
+                    ;;
+                *)
+                    # Invalid Arguments
+                    echo -e "Invalid Argument: $1"
+                    shift 1
+                    ;;
+            esac
+        done
+    else
+        # If there are no Arguments
+        printf "No arguments provided.\n"
+    fi
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi
