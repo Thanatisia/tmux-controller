@@ -9,15 +9,23 @@ make tmux more comfortable to use
 ### Dependencies
 + tmux
 
+### Obtaining
+- Clone the repository
+    ```console
+    git clone https://github.com/Thanatisia/tmux-controller
+    ```
+
 ### Installation
-```console
-sudo make install
-```
+- Install the script from system
+    ```console
+    sudo make install
+    ```
 
 ### Uninstall
-```console
-sudo make uninstall
-```
+- Remove the script from system
+    ```console
+    sudo make uninstall
+    ```
 
 ## Documentation
 ### Synopsis/Syntax
