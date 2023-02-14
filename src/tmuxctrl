@@ -21,11 +21,13 @@ Tmux Controller
     - Positionals
         - session {options} <arguments> : Manage tmux sessions
             - Options
-                + -a | --attach : Attach to an existing session
-                + -c | --create : Create a new session
-                + -d | --detach : Detach from current session
-                + -p | --print : Print all session names
-                + -h | --help : Display this verbose help message
+                - With Arguments
+                    + -a [target-session-name] | --attach [target-session-name] : Attach to an existing session
+                    + -c [new-session-name]    | --create [new-session-name]    : Create a new session
+                - Flags
+                    + -d | --detach : Detach from current session
+                    + -p | --print : Print all session names
+                    + -h | --help : Display this verbose help message
     - Optionals
         - With Arguments
         - Flags
@@ -117,12 +119,16 @@ create_session()
     Request for a session name and  
     create new session
     "
+    target_session_name="$1"
 
-    # Get user input
-    read -p "New Session Name > " target_session
+    # check if target session name is empty
+    if [[ "$target_session_name" == "" ]]; then
+        # Get user input
+        read -p "New Session Name > " target_session_name
+    fi
 
     # Attach session
-    tmux new -s "$target_session"
+    tmux new -s "$target_session_name"
 }
 
 print_all_sessions()
@@ -170,12 +176,24 @@ main()
                         case "$session_opts" in
                             "-a" | "--attach")
                                 # Attach session
-                                attach_session
+                                target_session_name=""
+                                if [[ "$3" != "" ]]; then
+                                    # If there's an argument parsed
+                                    target_session_name="$3"
+                                    shift 1
+                                fi
+                                attach_session "$target_session_name"
                                 shift 1
                                 ;;
                             "-c" | "--create")
                                 # Create session
-                                create_session
+                                new_session_name=""
+                                if [[ "$3" != "" ]]; then
+                                    # If there's an argument parsed
+                                    new_session_name="$3"
+                                    shift 1
+                                fi
+                                create_session "$new_session_name"
                                 shift 1
                                 ;;
                             "-d" | "--detach")
