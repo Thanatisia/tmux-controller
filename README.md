@@ -35,35 +35,51 @@ tmuxctrl {options} [positionals {suboptions}] <arguments>
 
 ### Parameters
 - Positionals
-    - session {options} <arguments> : Manage tmux sessions
+    - p | panes [actions] {options} <arguments> : Manage tmux panes
+        - Actions
+            + m | move {options} : Pane movements
+                - Options
+                    + -l | --left  : Move to the pane on the left
+                    + -r | --right : Move to the pane on the right
+                    + -u | --up    : Move to the pane above
+                    + -d | --down  : Move to the pane below
+    - s | session {options} <arguments> : Manage tmux sessions
         - Options
-            + -a | --attach : Attach to an existing session
-            + -c | --create : Create a new session
-            + -d | --detach : Detach from current session
-            + -p | --print : Print all session names
-            + -h | --help : Display this verbose help message
+            - With Arguments
+                + -a [target-session-name]               | --attach [target-session-name]               : Attach to an existing session
+                + -c [new-session-name]                  | --create [new-session-name]                  : Create a new session
+                + -r [target-session] [new-session-name] | --rename [target-session] [new-session-name] : Rename a target session to a new session name
+            - Flags
+                + -d | --detach : Detach from current session
+                + -p | --print : Print all session names
+                + -h | --help : Display this verbose help message
 - Optionals
     - With Arguments
     - Flags
         + -h | --help : Display this verbose help message
 
 ### Usage
+- Panes
+    1. Move to the pane on the left, right, above or below
+        ```console
+        tmuxctrl {p|pane} {m|move} {-l|-r|-u|-d}
+        ```
 - Sessions
     1. Create a new session
         ```console
-        tmuxctrl session -c
+        tmuxctrl {s|session} -c
         ```
     2. Attach to an existing session
         ```console
-        tmuxctrl session -a
+        tmuxctrl {s|session} -a
         ```
     3. Detach from the current session
         ```console
-        tmuxctrl session -d
+        tmuxctrl {s|session} -d
         ```
     4. List all existing sessions
         ```console
-        tmuxctrl session -p
+        tmuxctrl {s|session} -p
         ```
 
 - General

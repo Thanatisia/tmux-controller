@@ -19,11 +19,20 @@ Tmux Controller
     $0 {options} [positionals] <arguments>
 - Parameters
     - Positionals
-        - session {options} <arguments> : Manage tmux sessions
+        - p | panes [actions] {options} <arguments> : Manage tmux panes
+            - Actions
+                + m | move {options} : Pane movements
+                    - Options
+                        + -l | --left  : Move to the pane on the left
+                        + -r | --right : Move to the pane on the right
+                        + -u | --up    : Move to the pane above
+                        + -d | --down  : Move to the pane below
+        - s | session {options} <arguments> : Manage tmux sessions
             - Options
                 - With Arguments
-                    + -a [target-session-name] | --attach [target-session-name] : Attach to an existing session
-                    + -c [new-session-name]    | --create [new-session-name]    : Create a new session
+                    + -a [target-session-name]               | --attach [target-session-name]               : Attach to an existing session
+                    + -c [new-session-name]                  | --create [new-session-name]                  : Create a new session
+                    + -r [target-session] [new-session-name] | --rename [target-session] [new-session-name] : Rename a target session to a new session name
                 - Flags
                     + -d | --detach : Detach from current session
                     + -p | --print : Print all session names
@@ -33,15 +42,18 @@ Tmux Controller
         - Flags
             + -h | --help : Display this verbose help message
 - Usage
+    - Panes
+        1. Move to the pane on the left, right, above or below
+            $0 {p|pane} {m|move} {-l|-r|-u|-d}
     - Sessions
         1. Create a new session
-            $0 session -c
+            $0 {s|session} -c
         2. Attach to an existing session
-            $0 session -a
+            $0 {s|session} -a
         3. Detach from the current session
-            $0 session -d
+            $0 {s|session} -d
         4. List all existing sessions
-            $0 session -p
+            $0 {s|session} -p
 
     - General
         + Display this verbose help message
@@ -169,7 +181,68 @@ main()
         while [[ "$1" != "" ]]; do
             # Loop through all current arguments
             case "$1" in
-                "session")
+                "p" | "pane")
+                    # Manage tmux panes
+                    if [[ "$2" != "" ]]; then
+                        pane_action="$2"
+                        case "$pane_action" in
+                            "m" | "move")
+                                # Panel movements
+                                if [[ "$3" != "" ]]; then
+                                    pane_opts="$3"
+                                    case "$pane_opts" in
+                                        "-l" | "--left")
+                                            # Move left
+					    echo -e "Move Left"
+                                            shift 1
+                                            ;;
+                                        "-r" | "--right")
+                                            # Move right
+					    echo -e "Move Right"
+                                            shift 1
+                                            ;;
+                                        "-u" | "--up")
+                                            # Move up
+					    echo -e "Move Up"
+                                            shift 1
+                                            ;;
+                                        "-d" | "--down")
+                                            # Move down
+					    echo -e "Move Down"
+                                            shift 1
+                                            ;;
+                                        "-h" | "--help")
+                                            # Display help menu and verbose messages
+                                            display_help
+                                            shift 1
+                                            ;;
+                                        *)
+                                            # Invalid pane options
+                                            echo -e "[X] Invalid panel option: $pane_opts"
+                                            shift 1
+                                            ;;
+                                    esac
+                                    shift 1
+                                fi
+                                shift 1
+                                ;;
+                            "-h" | "--help")
+                                # Display help menu and verbose messages
+                                display_help
+                                shift 1
+                                ;;
+                            *)
+                                # Invalid pane action
+                                echo -e "[X] Invalid panel action: $pane_action"
+                                shift 1
+                                ;;
+                        esac
+                    else
+                        echo -e "No pane option provided."
+                    fi
+                    shift 1
+                    ;;
+                "s" | "session")
                     # Manage tmux sessions
                     if [[ "$2" != "" ]]; then
                         session_opts="$2"

@@ -1,0 +1,60 @@
+#!/bin/env bash
+: "
+Unit Tests
+for tmuxctrl
+"
+
+SRC_DIR="../src"
+SRC="tmuxctrl"
+FLAGS=""
+
+# Source Libraries
+. unittests.sh
+
+test_pane_movements()
+{
+    # Test moving pane left
+    cmd="$SRC_DIR/tmuxctrl p m -l"
+    assertEquals "$cmd" "Move Left"
+
+    # Test moving pane right
+    cmd="$SRC_DIR/tmuxctrl p m -r"
+    assertEquals "$cmd" "Move Right"
+
+    # Test moving pane up
+    cmd="$SRC_DIR/tmuxctrl p m -u"
+    assertEquals "$cmd" "Move Up"
+
+    # Test moving pane down
+    cmd="$SRC_DIR/tmuxctrl p m -d"
+    assertEquals "$cmd" "Move Down"
+}
+
+test_session_list()
+{
+    # Test list all sessions
+    cmd="$SRC_DIR/tmuxctrl s -p"
+    assertSuccess "$cmd"
+}
+
+main()
+{
+    argv=("$@")
+    argc="${#argv[@]}"
+
+    echo -e "========================="
+    echo -e " Testing Session Options "
+    echo -e "========================="
+    test_session_list
+
+    echo -e ""
+
+    echo -e "========================"
+    echo -e " Testing Pane Movements "
+    echo -e "========================"
+    test_pane_movements
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi

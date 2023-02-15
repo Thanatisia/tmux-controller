@@ -21,3 +21,9 @@ uninstall:
 
 clean:
 	## Clean-up all temporary files generated during building process
+
+test-tmuxctrl:
+	## Run tmuxctrl tests
+	@cd tests && \
+	    ./test_tmuxctrl
+
