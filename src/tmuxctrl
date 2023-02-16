@@ -31,12 +31,30 @@ Tmux Controller
             - Options
                 - With Arguments
                     + -a [target-session-name]               | --attach [target-session-name]               : Attach to an existing session
-                    + -c [new-session-name]                  | --create [new-session-name]                  : Create a new session
+                    - -c {options} <arguments>               | --create {options} <arguments>               : Create a new session
+                        - Options
+                            + -s | --session-name : Explicitly specify the new session's name
+                            + -n | --window-name  : Explicitly specify name of window to create alongside the session
                     + -r [target-session] [new-session-name] | --rename [target-session] [new-session-name] : Rename a target session to a new session name
                 - Flags
                     + -d | --detach : Detach from current session
                     + -p | --print : Print all session names
                     + -h | --help : Display this verbose help message
+        - w | window {options} <arguments> : Manage tmux windows
+            - Options
+                - With Arguments
+                    + -sp {options} <arguments> | --split {options} <arguments> : Split window; You can even stack them together
+                        - Options
+                            + d [direction] | daemon [direction] : Open pane as a daemon/background process - split but dont automatically switch to it
+                            + h | horizontal : Split horizontally (classically known as vertically; downwards)
+                            + v | vertical   : Split vertically (classically known as horizontally; sideways)
+                    + -sw {options} <arguments> | --swap {options} <arguments> : Swap windows
+                        - Options
+                            + s [source-window-number] | source [source-window-number] : Specify the source window to switch with; used with 't|target'
+                            + t [destination-window-number] | source [destination-window-number] : Specify the target/destination window to switch to; used with 's|source' to trade places; can be used individually by adding a prefix '+ | -' behind a number to move Right or Left by 1 space respectively.
+                - Flags
+                    + -h | --help : Display this verbose help message
+                    + -k | --kill : Kill the current window
     - Optionals
         - With Arguments
         - Flags
@@ -54,6 +72,28 @@ Tmux Controller
             $0 {s|session} -d
         4. List all existing sessions
             $0 {s|session} -p
+    - Windows
+        1. Split window panes
+            - Horizontally (Downwards)
+                $0 {w|window} -sp {h|horizontal}
+            - Vertically (Sideways)
+                $0 {w|window} -sp {v|vertical}
+            - Horizontally in the background as a process
+                $0 {w|window} -sp d [h|horizontal]
+            - Vertically in the background as a process (default if orientation is not provided)
+                $0 {w|window} -sp d [v|vertical]
+            - You can even split multiple times!
+                - "Golden Ratio" Spiral
+                    $0 {w|window} -sp {v|vertical} {h|horizontal} {v|vertical} {h|horizontal}
+                 - "Golden Ratio" Spiral with a background daemon
+                    $0 {w|window} -sp {v|vertical} {h|horizontal} {v|vertical} {h|horizontal} {d|daemon} [orientation (default: vertical)]
+        2. Swap Windows
+            - Move panes in window [0] <=> window [1]
+                $0 {w|window} -sw source 0 target 1
+            - Move window to the right (forward) by 1 position
+                $0 {w|window} -sw target +1
+            - Move window to the left (backwards) by 1 position
+                $0 {w|window} -sw target -1
 
     - General
         + Display this verbose help message
@@ -131,16 +171,16 @@ create_session()
     Request for a session name and  
     create new session
     "
-    target_session_name="$1"
+    # Initialize Variables
+    session_options=("$@")  # Specify session options
 
-    # check if target session name is empty
-    if [[ "$target_session_name" == "" ]]; then
-        # Get user input
-        read -p "New Session Name > " target_session_name
-    fi
+    #for optID in "${!session_options[@]}"; do
+    #    opts="${session_options[$optID]}"
+    #    echo -e "[$optID] = $opts"
+    #done
 
     # Attach session
-    tmux new -s "$target_session_name"
+    tmux new "${session_options[@]}"
 }
 
 print_all_sessions()
@@ -193,22 +233,22 @@ main()
                                     case "$pane_opts" in
                                         "-l" | "--left")
                                             # Move left
-					    echo -e "Move Left"
+					                        echo -e "Move Left"
                                             shift 1
                                             ;;
                                         "-r" | "--right")
                                             # Move right
-					    echo -e "Move Right"
+                    					    echo -e "Move Right"
                                             shift 1
                                             ;;
                                         "-u" | "--up")
                                             # Move up
-					    echo -e "Move Up"
+					                        echo -e "Move Up"
                                             shift 1
                                             ;;
                                         "-d" | "--down")
                                             # Move down
-					    echo -e "Move Down"
+                    					    echo -e "Move Down"
                                             shift 1
                                             ;;
                                         "-h" | "--help")
@@ -261,12 +301,52 @@ main()
                             "-c" | "--create")
                                 # Create session
                                 new_session_name=""
+                                create_opts=()
                                 if [[ "$3" != "" ]]; then
                                     # If there's an argument parsed
-                                    new_session_name="$3"
-                                    shift 1
+                                    # Loop through all other arguments
+                                    while [[ "$3" != "" ]]; do
+                                        # Check for session create options
+                                        case "$3" in
+                                            "-n" | "--window-name")
+                                                # Specify name of window to create alongside the session
+                                                new_window_name="$4"
+                                                # check if new window name is empty
+                                                if [[ "$new_window_name" == "" ]]; then
+                                                    # Get user input
+                                                    read -p "New Window Name > " new_window_name
+                                                fi
+
+                                                # Verify window name is provided
+                                                if [[ "$new_window_name" != "" ]]; then
+                                                    create_opts+=("$3" "$new_window_name") # Append new window name
+                                                fi
+                                                shift 1
+                                                ;;
+                                            "-s" | "--session-name")
+                                                # Specify name of session to create
+                                                target_session_name="$4"
+                                                # check if target session name is empty
+                                                if [[ "$target_session_name" == "" ]]; then
+                                                    # Get user input
+                                                    read -p "New Session Name > " target_session_name
+                                                fi
+
+                                                # Verify session name is provided
+                                                if [[ "$target_session_name" != "" ]]; then
+                                                    create_opts+=("$3" "$target_session_name") # Append new session name
+                                                fi
+                                                shift 1
+                                                ;;
+                                            *)
+                                                # Possibly arguments
+                                                shift 1
+                                                ;;
+                                        esac
+                                    done
                                 fi
-                                create_session "$new_session_name"
+
+                                create_session "${create_opts[@]}"
                                 shift 1
                                 ;;
                             "-d" | "--detach")
@@ -304,6 +384,152 @@ main()
                         esac
                     else
                         echo -e "No session option provided."
+                    fi
+                    shift 1
+                    ;;
+                "w" | "window")
+                    # Manage tmux windows
+                    if [[ "$2" != "" ]]; then
+                        window_opts="$2"
+                        case "$window_opts" in
+                            "-sp" | "--split")
+                                # Split Windows
+                                # Initialize Variables
+                                split_opts=()
+                                # split-window {-h : Horizontal Split} {-v : Vertical Split}
+                                if [[ "$3" != "" ]]; then
+                                    # If there's an argument parsed
+                                    # Loop through all other arguments
+                                    while [[ "$3" != "" ]]; do
+                                        # Check for '-d' == daemon/run as background
+                                        if [[ "$3" == "d" ]] || [[ "$3" == "daemon" ]]; then
+                                            # Open as a daemon/background process - split but dont automatically switch to it
+                                            case "$4" in
+                                                "h" | "horizontal")
+                                                    # Horizontal Split (Y axis)
+                                                    tmux split-window -d -h
+                                                    # split_opts+=("-h")
+                                                    shift 1
+                                                    ;;
+                                                "v" | "vertical")
+                                                    # Vertical Split (X axis)
+                                                    tmux split-window -d -v
+                                                    # split_opts+=("-v")
+                                                    shift 1
+                                                    ;;
+                                                *)
+                                                    # Default = Vertical
+                                                    tmux split-window -d
+                                                    shift 1
+                                                    ;;
+                                            esac
+                                            shift 1
+                                        fi
+
+                                        # Check for window pane swap options
+                                        case "$3" in
+                                            "h" | "horizontal")
+                                                # Horizontal Split (Y axis)
+                                                tmux split-window -h
+                                                # split_opts+=("-h")
+                                                shift 1
+                                                ;;
+                                            "v" | "vertical")
+                                                # Vertical Split (X axis)
+                                                tmux split-window -v
+                                                # split_opts+=("-v")
+                                                shift 1
+                                                ;;
+                                            *)
+                                                # Possibly arguments
+                                                shift 1
+                                                ;;
+                                        esac
+                                    done
+                                fi
+                                shift 1
+                                ;;
+                            "-sw" | "--swap")
+                                # Swap (Reorder) windows; swap a source window with a destination window
+                                # Initialize Variables
+                                swap_opts=()
+                                # swap-window {-d} {-s [source-window-number]} {-t [destination-window-number]}
+                                if [[ "$3" != "" ]]; then
+                                    # If there's an argument parsed
+                                    # Loop through all other arguments
+                                    while [[ "$3" != "" ]]; do
+                                        # Check for window swap options
+                                        case "$3" in
+                                            "s" | "source")
+                                                # Set the source window to move from
+                                                src_window="$4"
+                                                # Check that source window number is not empty
+                                                if [[ "$src_window" == "" ]]; then
+                                                    echo -e "Note: "
+                                                    echo -e "you can"
+                                                    echo -e " - add a '+' prefix behind the number to move the current window to the right by one position or"
+                                                    echo -e " - add a '-' prefix behind the number to move the current window to the left by one position"
+                                                    read -p "Source Window Order Number > " src_window
+                                                fi
+
+                                                # Verify that source number exists
+                                                if [[ "$src_window" != "" ]]; then
+                                                    # Source number exists
+                                                    swap_opts=("-s" "$src_window")
+                                                    # Shift cli arguments back by 1 more
+                                                    shift 1
+                                                fi
+                                                # Shift cli arguments back by 1 more (2x)
+                                                shift 1
+                                                ;;
+                                            "t" | "target")
+                                                # Set the target window to move to
+                                                dst_window="$4"
+                                                # Check that target window number is not empty
+                                                if [[ "$dst_window" == "" ]]; then
+                                                    echo -e "Note: "
+                                                    echo -e "you can"
+                                                    echo -e " - add a '+' prefix behind the number to move the current window to the right by one position or"
+                                                    echo -e " - add a '-' prefix behind the number to move the current window to the left by one position"
+                                                    read -p "Destination Window Order Number > " dst_window
+                                                fi
+
+                                                # Verify that target number exists
+                                                if [[ "$dst_window" != "" ]]; then
+                                                    # Target number exists
+                                                    swap_opts=("-t" "$dst_window")
+                                                    # Shift cli arguments back by 1 more
+                                                    shift 1
+                                                fi
+                                                # Shift cli arguments back 1 more (2x)
+                                                shift 1
+                                                ;;
+                                            *)
+                                                # Possibly arguments
+                                                swap_opts=("$3")
+                                                shift 1
+                                                ;;
+                                        esac
+
+                                        # Swap Windows
+                                        tmux swap-window "${swap_opts[@]}"
+                                    done
+                                fi
+                                shift 1
+                                ;;
+                            "-h" | "--help")
+                                # Display help menu and verbose messages
+                                display_help
+                                shift 1
+                                ;;
+                            *)
+                                # Invalid session option
+                                echo -e "[X] Invalid window option"
+                                shift 1
+                                ;;
+                        esac
+                    else
+                        echo -e "No window option provided."
                     fi
                     shift 1
                     ;;
