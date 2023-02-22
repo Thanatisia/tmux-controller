@@ -7,6 +7,26 @@ Tmux controller
 General Utilities
 EOF
 
+display_keybinds()
+{
+    : "
+    Display useful keybindings
+    "
+    keybinds="$(cat <<EOF
+Default Master Prefix (Aliased 'Prefix'): Ctrl + B
+
+[Keybinds]
+Prefix + n   : Go to next window
+Prefix + p   : Go to previous window
+Prefix + x   : Kill current window
+Prefix + ',' : Rename current window
+Prefix + '.' : Move current window (Rename current window index numebr)
+Prefix + '[' : Move to scrolling mode to scroll up the window pane
+EOF
+)"
+    echo -e "$keybinds"
+}
+
 display_help()
 {
     : "
@@ -21,6 +41,13 @@ Tmux Controller
     - Positionals
         - p | panes [actions] {options} <arguments> : Manage tmux panes
             - Actions
+                + l | list {options} <arguments>
+                    - With Arguments
+                        + -f | --format [format]        : Specify a format; for more info, please refer to 'man tmux' under the '# FORMATS' section
+                        + -t | --target [target-window] : Specify a target window to list panes
+                    - Flags
+                        + a | all     | -a | --all                    : List all panes
+                        + s | session | -s | --session                : Target is a session
                 + m | move {options} : Pane movements
                     - Options
                         + -l | --left  : Move to the pane on the left
@@ -142,6 +169,19 @@ get_tmux_session_Name()
 Functional Utilities
 EOF
 
+### =========== Panes ========= ###
+list_panes()
+{
+    : "
+    List window panes depending on options provided
+    "
+    local list_opts=("$@")
+
+    # List panes
+    tmux list-panes "${list_opts[@]}"
+}
+
+### =========== Sessions ========= ###
 attach_session()
 {
     : "
@@ -206,6 +246,8 @@ detach_session()
     tmux detach
 }
 
+### =========== Window ========= ###
+
 <<EOF
 System Utilities
 EOF
@@ -226,6 +268,83 @@ main()
                     if [[ "$2" != "" ]]; then
                         pane_action="$2"
                         case "$pane_action" in
+                            "l" | "list")
+                                # List panels
+                                list_opts=()
+
+                                # Get list options
+                                if [[ "$3" != "" ]]; then
+                                    # If there's an argument parsed
+                                    # Loop through all other arguments
+                                    while [[ "$3" != "" ]]; do
+                                        # Check for session create options
+                                        case "$3" in
+                                            "a" | "all" | "-a" | "--all")
+                                                # List all panes (Default)
+                                                list_opts+=("-a")
+                                                shift 1
+                                                ;;
+                                            "-f" | "--formats")
+                                                # Specify a target window to list panes
+                                                format="$4"
+                                                # Get target
+                                                if [[ "$format" == "" ]]; then
+                                                    read -p "Format > " format
+                                                fi
+
+                                                # Verify target window
+                                                if [[ "$format" != "" ]]; then
+                                                    list_opts+=("$3" "$format")
+                                                    shift 1
+                                                fi
+                                                ;;
+                                            "s" | "session" | "-s" | "--session")
+                                                # Target is a session
+                                                list_opts+=("-s")
+                                                shift 1
+                                                ;;
+                                            "-t" | "--target")
+                                                # Specify a target window to list panes
+                                                target_window="$4"
+                                                # Get target
+                                                if [[ "$target_window" == "" ]]; then
+                                                    read -p "Target Window > " target_window
+                                                fi
+
+                                                # Verify target window
+                                                if [[ "$target_window" != "" ]]; then
+                                                    list_opts+=("$3" "$target_window")
+                                                    shift 1
+                                                fi
+                                                ;;
+                                            "-h" | "--help")
+                                                # Display help for tmux list-panes
+                                                echo "$(cat << EOF
+$0 pane list {options} <arguments>
+
+Options:
+    - With Arguments
+        + -f | --format [format]        : Specify a format; for more info, please refer to 'man tmux' under the '# FORMATS' section
+        + -t | --target [target-window] : Specify a target window to list panes
+    - Flags
+        + -a | --all                    : List all panes
+        + -s | --session                : Target is a session
+EOF
+)"
+                                                exit
+                                                shift 1
+                                                ;;
+                                            *)
+                                                # Possibly other options
+                                                shift 1
+                                                ;;
+                                        esac
+                                    done
+                                fi
+
+                                list_panes "${list_opts[@]}"
+                                shift 1
+                                ;;
                             "m" | "move")
                                 # Panel movements
                                 if [[ "$3" != "" ]]; then
@@ -234,21 +353,25 @@ main()
                                         "-l" | "--left")
                                             # Move left
 					                        echo -e "Move Left"
+                                            tmux select-pane -L
                                             shift 1
                                             ;;
                                         "-r" | "--right")
                                             # Move right
                     					    echo -e "Move Right"
+                                            tmux select-pane -R
                                             shift 1
                                             ;;
                                         "-u" | "--up")
                                             # Move up
 					                        echo -e "Move Up"
+                                            tmux select-pane -U
                                             shift 1
                                             ;;
                                         "-d" | "--down")
                                             # Move down
                     					    echo -e "Move Down"
+                                            tmux select-pane -D
                                             shift 1
                                             ;;
                                         "-h" | "--help")
@@ -428,23 +551,49 @@ main()
 
                                         # Check for window pane swap options
                                         case "$3" in
+                                            "c" | "custom-directory")
+                                                # Set custom directory
+                                                custom_dir="$4"
+
+                                                # Check if custom directory is provided
+                                                if [[ "$custom_dir" == "" ]]; then
+                                                    # Not provided
+                                                    # Get custom directory
+                                                    read -p "Custom Directory Path > " custom_dir
+                                                else
+                                                    # Provided
+                                                    # shift by 1 space
+                                                    shift 1
+                                                fi
+
+                                                # Verify user input
+                                                if [[ "$custom_dir" != "" ]]; then
+                                                    split_opts=("-c" $custom_dir)
+                                                fi
+
+                                                shift 1
+                                                ;;
                                             "h" | "horizontal")
                                                 # Horizontal Split (Y axis)
-                                                tmux split-window -h
-                                                # split_opts+=("-h")
+                                                
+                                                # tmux split-window -h
+                                                split_opts=("-h")
                                                 shift 1
                                                 ;;
                                             "v" | "vertical")
                                                 # Vertical Split (X axis)
-                                                tmux split-window -v
-                                                # split_opts+=("-v")
+                                                # tmux split-window -v
+                                                split_opts=("-v")
                                                 shift 1
                                                 ;;
                                             *)
                                                 # Possibly arguments
-                                                shift 1
+                                                split_opts=("$3" "$4") # Append next 2 arguments
+                                                shift 2
                                                 ;;
                                         esac
+                                        # Split pane
+                                        echo tmux split-window "${split_opts[@]}"
                                     done
                                 fi
                                 shift 1
@@ -531,6 +680,11 @@ main()
                     else
                         echo -e "No window option provided."
                     fi
+                    shift 1
+                    ;;
+                "-k" | "--keybinds")
+                    # Display useful keybinds
+                    display_keybinds
                     shift 1
                     ;;
                 "-h" | "--help")

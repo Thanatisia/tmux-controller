@@ -11,6 +11,7 @@ FLAGS=""
 # Source Libraries
 . unittests.sh
 
+### ========= Panes ========== ###
 test_pane_movements()
 {
     # Test moving pane left
@@ -30,11 +31,24 @@ test_pane_movements()
     assertEquals "$cmd" "Move Down"
 }
 
+### ========= Sessions ========== ###
 test_session_list()
 {
     # Test list all sessions
     cmd="$SRC_DIR/tmuxctrl s -p"
     assertSuccess "$cmd"
+}
+
+### ========= Windows ========== ###
+test_window_split()
+{
+    : "
+    Split Window Panes 
+    - Horizontal
+    - Vertical
+    "
+    # List Panes
+    tmux list-panes
 }
 
 main()

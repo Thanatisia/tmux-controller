@@ -90,6 +90,7 @@ tmuxctrl {options} [positionals {suboptions}] <arguments>
     - With Arguments
     - Flags
         + -h | --help : Display this verbose help message
+        + -k | --keybinds : Display/List (as many as possible/all) possible keybindings
 
 ### Usage
 - Panes
@@ -156,6 +157,10 @@ tmuxctrl {options} [positionals {suboptions}] <arguments>
             ```
 
 - General
+    + Display tmux keybindings
+        ```console
+        tmuxctrl -k
+        ```
     + Display this verbose help message
         ```console
         tmuxctrl -h
